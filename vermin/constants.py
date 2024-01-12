@@ -2,7 +2,8 @@ from multiprocessing import cpu_count
 
 VERSION = "1.6.0"
 DEFAULT_PROCESSES = cpu_count()
-CONFIG_FILE_NAMES = ["vermin.ini", "vermin.conf", ".vermin", "setup.cfg"]
+CONFIG_FILE_NAMES = ["vermin.ini", "vermin.conf", ".vermin", "setup.cfg", "pyproject.toml"]
+CONFIG_SECTIONS = ["vermin", "tool.vermin"]
 CONFIG_SECTION = "vermin"
 
 PROJECT_BOUNDARIES = [

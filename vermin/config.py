@@ -8,7 +8,7 @@ from configparser import ConfigParser, ParsingError  # novm
 from .backports import Backports
 from .features import Features
 from .formats import Format, DefaultFormat
-from .constants import DEFAULT_PROCESSES, CONFIG_FILE_NAMES, CONFIG_SECTION, PROJECT_BOUNDARIES
+from .constants import DEFAULT_PROCESSES, CONFIG_FILE_NAMES, CONFIG_SECTION, CONFIG_SECTIONS, PROJECT_BOUNDARIES
 from .utility import parse_target
 from . import formats
 
@@ -216,6 +216,16 @@ class Config:
         print("Invalid target: {}".format(target))
         return None
 
+    if filename.endswith("pyproject.toml"):
+      if parser.has_section("tool.poetry.dependencies"):
+        python_version = parser.get("tool.poetry.dependencies", "python", fallback=None)
+      if python_version is None and parser.has_section("project"):
+        python_version = parser.get("project", "requires-python", fallback=None)
+      if python_version is not None:
+        target = python_version.strip("^>=")
+        if not config.add_target(target):
+          print("Invalid target: {}".format(target))
+
     fmt_str = parser.get(CONFIG_SECTION, "format").strip()
     fmt = formats.from_name(fmt_str)
     if fmt is None:
@@ -230,6 +240,7 @@ class Config:
     """Detects Vermin config file starting from `init_folder` or CWD. It proceeds through parent
 folders until root or project boundaries are reached. Each candidate is checked to be an INI with a
 `[vermin]` section in it."""
+    global CONFIG_SECTION
     folder = init_folder or os.getcwd()
     while True:
       for candidate in CONFIG_FILE_NAMES:
@@ -239,8 +250,11 @@ folders until root or project boundaries are reached. Each candidate is checked 
             cp = ConfigParser()
             parse_success_files = cp.read(look_for) if sys.version_info < (3, 2) \
               else cp.read(look_for, encoding="utf-8")  # novm
-            if look_for in parse_success_files and cp.has_section(CONFIG_SECTION):
-              return look_for
+            if look_for in parse_success_files:
+              for candidate_section in CONFIG_SECTIONS:
+                if cp.has_section(candidate_section):
+                  CONFIG_SECTION = candidate_section
+                  return look_for
           except ParsingError:  # pragma: no cover
             pass
 
